@@ -11,7 +11,7 @@ Late entry beyond 15 minutes is not allowed in lectures without permission from 
 
 ## Event Attendance
 Attendance during official university events is considered valid only if QR-based check-in is completed.
-
+node
 ## Disciplinary Action
 If attendance falls below 60%, students may be detained and barred from semester exams.
 

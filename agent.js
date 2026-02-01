@@ -1,115 +1,120 @@
 import axios from "axios";
-import readline from "readline";
+import { ChromaClient } from "chromadb";
 
-import { addToMemory, getMemoryPrompt } from "./memory.js";
-import { getTime, readTxt } from "./tools.js";
-import { searchDocs } from "./rag.js";
+/* ---------------- CONFIG ---------------- */
+const OLLAMA_BASE = "http://localhost:11434";
+const LLM_MODEL = "llama3.1";
+const EMBED_MODEL = "nomic-embed-text";
+/* ---------------------------------------- */
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+/* -------- SAFE OLLAMA PARSER -------- */
+function extractText(res) {
+  return (
+    res?.data?.response ||
+    res?.data?.message?.content ||
+    ""
+  ).trim();
+}
+
+/* -------------- CHROMA -------------- */
+const client = new ChromaClient({
+  host: "localhost",
+  port: 8000,
 });
 
-console.log("🤖 AI Agent Ready (memory + tools + RAG)\nType 'exit' to quit");
+const collection = await client.getCollection({
+  name: "my_knowledge",
+  embeddingFunction: null,
+});
 
-async function askLLM(prompt) {
-  const res = await axios.post("http://localhost:11434/api/generate", {
-    model: "llama3.1",
-    prompt,
-    stream: false
+/* -------------- AGENT STEPS -------------- */
+
+// 1️⃣ THINK
+async function think(question) {
+  const res = await axios.post(`${OLLAMA_BASE}/api/generate`, {
+    model: LLM_MODEL,
+    prompt: `
+Rewrite the question as a short search query.
+
+Question:
+${question}
+
+Search query:
+`,
+    stream: false,
   });
-  return res.data.response.trim();
+
+  return extractText(res);
 }
 
-async function runAgent(userInput) {
-  // 🧠 store user msg
-  addToMemory("user", userInput);
+// 2️⃣ RETRIEVE
+async function retrieve(intent) {
+  const embedRes = await axios.post(`${OLLAMA_BASE}/api/embeddings`, {
+    model: EMBED_MODEL,
+    prompt: intent,
+  });
 
-  const memory = getMemoryPrompt();
+  const results = await collection.query({
+    nResults: 3,
+    queryEmbeddings: [embedRes.data.embedding],
+  });
 
-  // 📚 RAG search
-  const docContext = await searchDocs(userInput);
+  return results.documents.flat().join("\n");
+}
 
-  // 🧠 TOOL DECISION PROMPT
-  const toolPrompt = `
-You are an AI agent with memory, document access and tools.
+// 3️⃣ ANSWER
+async function answer(question, context) {
+  const res = await axios.post(`${OLLAMA_BASE}/api/generate`, {
+    model: LLM_MODEL,
+    prompt: `
+Answer using ONLY the context.
+If not found, say "I don't know".
 
-Relevant document info:
-${docContext}
+Context:
+${context}
 
-TOOLS:
-1. get_time
-2. read_txt(path)
+Question:
+${question}
+`,
+    stream: false,
+  });
 
-If tool is required, reply EXACTLY in format:
-TOOL: tool_name | argument
+  return extractText(res);
+}
 
-If not, answer normally.
+// 4️⃣ SAFE REFLECTION (NO LLM LOOP)
+function reflect(answer, context) {
+  if (!answer) return false;
+  if (answer.toLowerCase().includes("i don't know")) return false;
+  if (context.length < 20) return false;
+  return true;
+}
 
-Conversation:
-${memory}
+/* -------------- RUN AGENT -------------- */
+export async function runAgent(question) {
+  console.log("🧠 THINKING...");
+  const intent = await think(question);
+  console.log("Intent:", intent);
 
-USER: ${userInput}
-ASSISTANT:
-`;
+  console.log("\n📚 RETRIEVING...");
+  const context = await retrieve(intent);
 
-  let reply = await askLLM(toolPrompt);
+  console.log("\n✍️ ANSWERING...");
+  const response = await answer(question, context);
 
-  console.log("\n🤖 Raw:", reply);
+  console.log("\n🔍 REFLECTING...");
+  const ok = reflect(response, context);
 
-  // 🛠 TOOL HANDLING
-  if (reply.startsWith("TOOL:")) {
-    const [, toolLine] = reply.split("TOOL:");
-    const [toolName, arg] = toolLine.split("|").map(s => s.trim());
-
-    let toolResult = "";
-
-    if (toolName === "get_time") {
-      toolResult = getTime();
-    }
-
-    else if (toolName === "read_txt") {
-      toolResult = readTxt(arg);
-    }
-
-    // 🔁 SEND TOOL RESULT BACK TO LLM
-    const finalPrompt = `
-You used a tool and got this result:
-
-${toolResult}
-
-Now answer the user's original question:
-
-QUESTION: ${userInput}
-
-Give a clear and helpful answer using this data.
-`;
-
-    reply = await askLLM(finalPrompt);
+  if (!ok) {
+    return "I don't have enough information to answer that confidently.";
   }
 
-  // 🧠 store assistant msg
-  addToMemory("assistant", reply);
-
-  console.log("\n🤖 Agent:", reply);
+  return response;
 }
 
-function chat() {
-  rl.question("\n🧑 You: ", async (input) => {
-    if (input.toLowerCase() === "exit") {
-      rl.close();
-      return;
-    }
+/* -------------- START -------------- */
+const userQuestion = "What is University head name ";
 
-    try {
-      await runAgent(input);
-    } catch (err) {
-      console.error("❌ Error:", err.message);
-    }
+const finalAnswer = await runAgent(userQuestion);
 
-    chat();
-  });
-}
-
-chat();
- 
+console.log("\n🤖 FINAL ANSWER:\n", finalAnswer);

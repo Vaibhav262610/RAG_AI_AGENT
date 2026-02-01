@@ -1,0 +1,3 @@
+MEgatron is a hackathon project that helps Vaibhav university students
+connect based on shared interests. It uses Next.js, Node.js,
+MongoDB, and WebSockets for real-time chat.University head name is Vaibhav Rajpoot 
