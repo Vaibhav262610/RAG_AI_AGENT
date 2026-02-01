@@ -1,0 +1,19 @@
+# University Attendance Rules
+
+## Minimum Attendance
+Students must maintain at least 75% attendance in each subject to be eligible for exams.
+
+## Medical Leave
+Medical leave is accepted only if a valid medical certificate is submitted within 7 days.
+
+## Late Entry
+Late entry beyond 15 minutes is not allowed in lectures without permission from the faculty.
+
+## Event Attendance
+Attendance during official university events is considered valid only if QR-based check-in is completed.
+
+## Disciplinary Action
+If attendance falls below 60%, students may be detained and barred from semester exams.
+
+rule number 5: 
+on fake duty leave you will get suspened

@@ -1,0 +1,32 @@
+# Data Structures and Algorithms Notes
+
+## What is Recursion?
+Recursion is a technique where a function calls itself to solve smaller subproblems.
+Every recursive function must have:
+- Base case
+-kuch nahi aata
+- Recursive case
+
+Without a base case, recursion will cause stack overflow.
+
+## What is Stack?
+A stack is a linear data structure that follows LIFO (Last In First Out).
+Operations:
+- push
+- pop
+- top
+
+Used in:
+- Function calls
+- Undo/Redo
+- Expression evaluation
+
+## Hashing
+Hashing is used to store data in constant time complexity.
+It uses a hash function to map keys to indexes.
+
+## Time Complexity
+- O(1): Constant
+- O(log n): Binary search
+- O(n): Linear search
+- O(n log n): Merge sort

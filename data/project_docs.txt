@@ -1,0 +1,31 @@
+# Intellio AI Interview Platform
+
+## Overview
+Intellio is an AI-powered interview preparation and assessment platform.
+It uses intelligent voice agents and real-time feedback.
+
+## Features
+- Resume-based question generation
+- AI mock interviews
+- Real-time communication analysis
+- Skill-based scoring
+
+## Tech Stack
+Frontend:
+- Next.js
+- Tailwind CSS
+
+Backend:
+- Node.js
+- Express
+- MongoDB
+
+AI:
+- Speech-to-text
+- LLM-based evaluation
+- RAG for resume understanding
+
+## Future Improvements
+- Emotion detection
+- Multi-language interviews
+- Recruiter dashboard
